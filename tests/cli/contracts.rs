@@ -684,7 +684,7 @@ fn agent_prompt_nested_wait_presence_contract() {
         ),
         (
             vec!["agent", "prompt", "named-agent", "literal - text", "--wait"],
-            json!({"id":"cli:agent:prompt","method":"agent.prompt","params":{"target":"named-agent","text":"literal - text","wait":{}}}),
+            json!({"id":"cli:agent:prompt","method":"agent.prompt","params":{"target":"named-agent","text":"literal - text","wait":{"timeout_ms":1800000}}}),
         ),
         (
             vec![

@@ -232,6 +232,77 @@ fn prompt_wait_is_sent_as_one_agent_request() {
             prompt["params"]["wait"]["until"],
             serde_json::json!(["idle"])
         );
+        // Without --timeout, the CLI threads the agent.wait_timeout_ms config
+        // default into the wait options instead of leaving them absent.
+        assert_eq!(prompt["params"]["wait"]["timeout_ms"], 1_800_000);
+        writeln!(
+            prompt_stream,
+            "{}",
+            serde_json::json!({
+                "id": prompt["id"],
+                "result": {
+                    "type": "agent_prompted",
+                    "agent": {
+                        "pane_id": "w1:p1",
+                        "terminal_id": "term_1",
+                        "name": "reviewer",
+                        "agent": "pi",
+                        "agent_status": "idle",
+                        "workspace_id": "w1",
+                        "tab_id": "w1:t1",
+                        "focused": true,
+                        "revision": 0
+                    }
+                }
+            })
+        )
+        .unwrap();
+        prompt_stream.flush().unwrap();
+    });
+
+    let prompted = run_named_cli_with_socket_override(
+        &base,
+        &base,
+        &[
+            "agent",
+            "prompt",
+            "w1:p1",
+            "review this",
+            "--wait",
+            "--until",
+            "idle",
+        ],
+        Some(&socket_path),
+    );
+    assert!(
+        prompted.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&prompted.stderr)
+    );
+    let prompted: serde_json::Value = serde_json::from_slice(&prompted.stdout).unwrap();
+    assert_eq!(prompted["result"]["agent"]["name"], "reviewer");
+
+    server.join().unwrap();
+    cleanup_test_base(&base);
+}
+
+#[test]
+fn prompt_wait_config_zero_omits_timeout_ms() {
+    let base = unique_test_dir();
+    fs::create_dir_all(base.join("config").join(app_dir_name())).unwrap();
+    fs::write(
+        base.join("config").join(app_dir_name()).join("config.toml"),
+        "[agent]\nwait_timeout_ms = 0\n",
+    )
+    .unwrap();
+    let socket_path = base.join("herdr.sock");
+    let listener = UnixListener::bind(&socket_path).unwrap();
+
+    let server = thread::spawn(move || {
+        let (mut prompt_stream, prompt_line) = accept_fake_cli_operation(&listener);
+        let prompt: serde_json::Value = serde_json::from_str(&prompt_line).unwrap();
+        assert_eq!(prompt["method"], "agent.prompt");
+        // Config 0 is the explicit indefinite opt-out: no timeout is threaded.
         assert!(prompt["params"]["wait"].get("timeout_ms").is_none());
         writeln!(
             prompt_stream,
@@ -258,17 +329,11 @@ fn prompt_wait_is_sent_as_one_agent_request() {
         prompt_stream.flush().unwrap();
     });
 
-    let prompted = run_cli(
-        &socket_path,
-        &[
-            "agent",
-            "prompt",
-            "w1:p1",
-            "review this",
-            "--wait",
-            "--until",
-            "idle",
-        ],
+    let prompted = run_named_cli_with_socket_override(
+        &base.join("config"),
+        &base,
+        &["agent", "prompt", "w1:p1", "review this", "--wait"],
+        Some(&socket_path),
     );
     assert!(
         prompted.status.success(),

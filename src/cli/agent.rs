@@ -601,7 +601,19 @@ fn agent_rename(params: AgentRenameParams) -> std::io::Result<i32> {
     })?)
 }
 
-fn agent_prompt(params: AgentPromptParams) -> std::io::Result<i32> {
+fn agent_prompt(mut params: AgentPromptParams) -> std::io::Result<i32> {
+    // Mirrors agent_wait: the raw API keeps indefinite waits available; the
+    // CLI applies the configurable default so a wedged settled-state wait
+    // surfaces as an actionable timeout instead of hanging silently. `0` in
+    // config restores indefinite waiting.
+    if let Some(wait) = params.wait.as_mut() {
+        if wait.timeout_ms.is_none() {
+            let default_timeout_ms = crate::config::Config::load().config.agent.wait_timeout_ms;
+            if default_timeout_ms > 0 {
+                wait.timeout_ms = Some(default_timeout_ms);
+            }
+        }
+    }
     let response = super::send_request(&Request {
         id: "cli:agent:prompt".into(),
         method: Method::AgentPrompt(params),

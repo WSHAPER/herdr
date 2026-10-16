@@ -379,3 +379,151 @@ fn agent_wait_idle_recovers_after_tab_focus() {
 
     cleanup_spawned_herdr(herdr, base);
 }
+
+#[test]
+fn agent_prompt_wait_defaults_to_config_timeout_and_explains_unseen_done_pane() {
+    let base = unique_test_dir();
+    let config_home = base.join("config");
+    let runtime_dir = base.join("runtime");
+    let socket_path = runtime_dir.join("herdr.sock");
+    let bin_dir = base.join("bin");
+
+    // The fake agent reports its startup as idle and reports idle again for
+    // each consumed prompt, so the post-prompt completion lands while the pane
+    // stays unviewed and projects to done.
+    fs::create_dir_all(&bin_dir).unwrap();
+    let fake_pi = bin_dir.join("pi");
+    fs::write(
+        &fake_pi,
+        format!(
+            "#!/bin/sh\nexport HERDR_AGENT=pi\n'{herdr}' pane report-agent \"$HERDR_PANE_ID\" --source custom:fake-pi --agent pi --state idle >/dev/null\nwhile IFS= read -r _prompt; do\n  '{herdr}' pane report-agent \"$HERDR_PANE_ID\" --source custom:fake-pi --agent pi --state idle >/dev/null\ndone\n",
+            herdr = env!("CARGO_BIN_EXE_herdr"),
+        ),
+    )
+    .unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&fake_pi).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&fake_pi, perms).unwrap();
+    }
+
+    // The config default is threaded by the CLI process, so the CLI reads the
+    // same config the server started with.
+    let herdr = spawn_herdr_with_config(
+        &config_home,
+        &runtime_dir,
+        &socket_path,
+        Some(&bin_dir),
+        "onboarding = false\n[agent]\nwait_timeout_ms = 2500\n",
+    );
+    wait_for_socket(&socket_path, Duration::from_secs(5));
+
+    let created = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_prompt_default_1","method":"workspace.create","params":{{"cwd":"{}","focus":true}}}}"#,
+            base.display()
+        ),
+    );
+    let workspace_id = created["result"]["workspace"]["workspace_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    // The agent pane lives in a background tab so its completions stay unseen.
+    let tab_created = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_prompt_default_2","method":"tab.create","params":{{"workspace_id":"{}"}}}}"#,
+            workspace_id
+        ),
+    );
+    assert_eq!(tab_created["result"]["type"], "tab_created");
+    let background_pane = tab_created["result"]["root_pane"]["pane_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let start_pi = run_cli(&socket_path, &["pane", "run", &background_pane, "pi"]);
+    assert!(start_pi.status.success());
+    assert!(wait_until(
+        Duration::from_secs(3),
+        Duration::from_millis(25),
+        || {
+            send_request(
+                &socket_path,
+                &format!(
+                    r#"{{"id":"req_cli_prompt_default_3","method":"agent.get","params":{{"target":"{}"}}}}"#,
+                    background_pane
+                ),
+            )["result"]["agent"]["agent"]
+                .as_str()
+                .is_some_and(|agent| agent == "pi")
+        }
+    ));
+
+    // Start the turn from working so the settled-state wait is entered
+    // directly and the config default bounds it.
+    let reported = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_prompt_default_4","method":"pane.report_agent","params":{{"pane_id":"{}","source":"custom:test","agent":"pi","state":"working"}}}}"#,
+            background_pane
+        ),
+    );
+    assert_eq!(reported["result"]["type"], "ok");
+    assert!(wait_until(
+        Duration::from_secs(2),
+        Duration::from_millis(25),
+        || {
+            send_request(
+                &socket_path,
+                &format!(
+                    r#"{{"id":"req_cli_prompt_default_5","method":"agent.get","params":{{"target":"{}"}}}}"#,
+                    background_pane
+                ),
+            )["result"]["agent"]["agent_status"]
+                .as_str()
+                .is_some_and(|status| status == "working")
+        }
+    ));
+
+    let prompt_started = Instant::now();
+    let waited = run_named_cli_with_socket_override(
+        &config_home,
+        &runtime_dir,
+        &[
+            "agent",
+            "prompt",
+            &background_pane,
+            "finish the review",
+            "--wait",
+            "--until",
+            "idle",
+        ],
+        Some(&socket_path),
+    );
+    let elapsed = prompt_started.elapsed();
+    assert_eq!(waited.status.code(), Some(1));
+    let error: serde_json::Value = serde_json::from_slice(&waited.stderr).unwrap();
+    assert_eq!(error["error"]["code"], "timeout");
+    let message = error["error"]["message"].as_str().unwrap();
+    assert!(
+        message.contains("current status is done"),
+        "message: {message}"
+    );
+    assert!(
+        message.contains("finished with unseen output"),
+        "message: {message}"
+    );
+    // The 2500ms config default bounded the wait: not the indefinite raw
+    // default, and not the five-second activity gate.
+    assert!(
+        elapsed >= Duration::from_millis(2400) && elapsed < Duration::from_secs(5),
+        "elapsed: {elapsed:?}"
+    );
+
+    cleanup_spawned_herdr(herdr, base);
+}

@@ -418,7 +418,7 @@ Use `pane wait-output` for normal commands and servers. Use `agent wait` for cod
 
 A timeout or `agent_prompt_stalled` does not prove the prompt was never delivered. Inspect the agent before retrying.
 
-`pane wait-output` waits indefinitely when `--timeout` is omitted. `agent wait` applies the `agent.wait_timeout_ms` config default (30 minutes) when `--timeout` is omitted; set that key to `0` to wait indefinitely. The `agent wait` timeout error reports the agent's current status, and when the wait asked for `idle` only while the agent reports `done`, it explains that the agent finished with unseen output and reports `idle` once the pane is viewed. For `agent prompt --wait`, the settled-state wait remains indefinite after activity is observed or when the prompt starts in `working`; a non-working prompt still returns `agent_prompt_stalled` after five seconds without observed activity. A timeout or server error is emitted as JSON on stderr with exit status 1. CLI usage errors exit with status 2.
+`pane wait-output` waits indefinitely when `--timeout` is omitted. `agent wait` and the settled-state wait of `agent prompt --wait` apply the `agent.wait_timeout_ms` config default (30 minutes) when `--timeout` is omitted; set that key to `0` to wait indefinitely. Their timeout errors report the agent's current status, and when the wait asked for `idle` only while the agent reports `done`, they explain that the agent finished with unseen output and reports `idle` once the pane is viewed. For `agent prompt --wait`, a non-working prompt still returns `agent_prompt_stalled` after five seconds without observed activity. A timeout or server error is emitted as JSON on stderr with exit status 1. CLI usage errors exit with status 2.
 
 ## Integrations
 

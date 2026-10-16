@@ -1040,7 +1040,8 @@ impl ImeCursorShape {
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(default)]
 pub struct AgentConfig {
-    /// Default `herdr agent wait` timeout in milliseconds when `--timeout` is
+    /// Default timeout in milliseconds for `herdr agent wait` and the
+    /// settled-state wait of `herdr agent prompt --wait` when `--timeout` is
     /// omitted. `0` waits indefinitely. Default: 1800000.
     pub wait_timeout_ms: u64,
 }
