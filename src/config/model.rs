@@ -315,6 +315,7 @@ pub struct Config {
     pub theme: ThemeConfig,
     pub terminal: TerminalConfig,
     pub session: SessionConfig,
+    pub agent: AgentConfig,
     pub server: ServerConfig,
     pub update: UpdateConfig,
     pub keys: KeysConfig,
@@ -1032,6 +1033,22 @@ impl ImeCursorShape {
             Self::SteadyUnderline => 4,
             Self::Bar => 5,
             Self::SteadyBar => 6,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(default)]
+pub struct AgentConfig {
+    /// Default `herdr agent wait` timeout in milliseconds when `--timeout` is
+    /// omitted. `0` waits indefinitely. Default: 1800000.
+    pub wait_timeout_ms: u64,
+}
+
+impl Default for AgentConfig {
+    fn default() -> Self {
+        Self {
+            wait_timeout_ms: 1_800_000,
         }
     }
 }

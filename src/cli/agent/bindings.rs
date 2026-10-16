@@ -258,7 +258,7 @@ pub(crate) fn command() -> Command {
             .group(ArgGroup::new("rename").args(["name", "clear"]).required(true)))
         .subcommand(leaf("wait", AgentWaitProjection::arguments(), "Wait until an agent reaches one of the requested states")
             .override_usage("herdr agent wait <TARGET> [OPTIONS]")
-            .after_help("Without --until, matches idle, done, or blocked. Use --until unknown explicitly when needed. Without --timeout, waits indefinitely."))
+            .after_help("Without --until, matches idle, done, or blocked. Use --until unknown explicitly when needed. Without --timeout, the wait uses agent.wait_timeout_ms from config (default 1800000ms); set it to 0 to wait indefinitely."))
         .subcommand(leaf("prompt", AgentPromptProjection::arguments(), "Submit a prompt to an agent")
             .args(AgentPromptWaitProjection::arguments().into_iter().map(|arg| arg.requires("wait")))
             .override_usage("herdr agent prompt <TARGET> <TEXT> [OPTIONS]")

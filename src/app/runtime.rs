@@ -140,6 +140,29 @@ impl App {
         }
     }
 
+    /// Periodic integration health pass: reconcile a "needs repair" opencode
+    /// integration (assets current, registration missing) by re-running the
+    /// idempotent install, and surface failures so the stale boot-time badge
+    /// does not hide them. Local-only; independent of background update policy.
+    pub(crate) fn run_integration_health_check(&mut self) {
+        self.next_integration_health_check =
+            Some(Instant::now() + crate::app::INTEGRATION_HEALTH_CHECK_INTERVAL);
+        let report = crate::integration::repair_current_version_integrations();
+        for target in &report.repaired {
+            tracing::info!(
+                target = ?target,
+                "integration repaired after registration loss"
+            );
+        }
+        for (target, err) in &report.failed {
+            tracing::warn!(target = ?target, err = %err, "integration repair failed");
+        }
+        if !report.repaired.is_empty() || !report.failed.is_empty() {
+            self.state.integration_recommendations =
+                crate::integration::integration_recommendations();
+        }
+    }
+
     pub(crate) fn next_headless_loop_deadline_with_git_refresh(
         &self,
         now: Instant,
@@ -165,6 +188,7 @@ impl App {
             self.restored_worktree_validation_retry_at,
             self.next_auto_update_check,
             self.next_agent_manifest_update_check,
+            self.next_integration_health_check,
             self.agent_metadata_deadline,
             self.pending_agent_resume_deadline,
             self.session_save_deadline,

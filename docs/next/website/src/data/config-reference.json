@@ -1445,6 +1445,18 @@
       ]
     },
     {
+      "id": "agent",
+      "title": "Agent",
+      "keys": [
+        {
+          "key": "agent.wait_timeout_ms",
+          "type": "integer",
+          "default": "1800000",
+          "description": "Default timeout in milliseconds for `herdr agent wait` when --timeout is omitted. A wedged or unreachable wait then fails with a timeout error instead of hanging silently. Set to 0 to wait indefinitely. The raw socket `agent.wait` method is unaffected and always waits until its own timeout_ms."
+        }
+      ]
+    },
+    {
       "id": "worktrees",
       "title": "Worktrees",
       "keys": [

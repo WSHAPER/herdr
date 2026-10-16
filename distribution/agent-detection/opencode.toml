@@ -1,18 +1,19 @@
 id = "opencode"
-version = "2026.06.10.1"
+version = "2026.10.16.1"
 min_engine_version = 1
-updated_at = "2026-06-10T00:00:00Z"
+updated_at = "2026-10-16T00:00:00Z"
 aliases = ["open-code", "herdr:opencode"]
 
 [[rules]]
 id = "permission_required"
 state = "blocked"
 priority = 300
-region = "whole_recent"
+region = "bottom_non_empty_lines(1)"
 visible_blocker = true
-any = [
-  { contains = ["△ Permission required"] },
-  { contains = ["esc dismiss"], any = [{ contains = ["enter confirm"] }, { contains = ["enter submit"] }, { contains = ["enter toggle"] }], all = [{ any = [{ contains = ["↑↓ select"] }, { contains = ["⇆ tab"] }] }] },
+all = [
+  { any = [{ contains = ["↑↓ select"] }, { contains = ["⇆ tab"] }, { contains = ["⇆ select"] }] },
+  { any = [{ contains = ["enter confirm"] }, { contains = ["enter submit"] }, { contains = ["enter toggle"] }] },
+  { any = [{ contains = ["esc dismiss"] }, { contains = ["esc cancel"] }, { contains = ["esc reject"] }] },
 ]
 
 [[rules]]

@@ -12,7 +12,8 @@ mod types;
 mod version;
 
 pub(crate) use actions::{
-    install_experimental_letta, install_target, uninstall_experimental_letta, uninstall_target,
+    install_experimental_letta, install_target, repair_current_version_integrations,
+    uninstall_experimental_letta, uninstall_target,
 };
 #[cfg(test)]
 pub(crate) use env::integration_env_lock;

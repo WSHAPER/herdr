@@ -19,6 +19,15 @@ use crate::ipc::LocalStream;
 
 const AGENT_PROMPT_EFFECT_TIMEOUT_MS: u64 = 5_000;
 
+/// How often a waiting agent wait re-reads agent state even when no pane event
+/// arrived. The wait loop is otherwise event-driven: a missed transition event
+/// (for example after event-history loss) would leave the wait probing nothing.
+const AGENT_WAIT_FALLBACK_PROBE_INTERVAL_MS: u64 = 2_000;
+
+fn agent_wait_fallback_probe_due(last_probe: std::time::Instant, now: std::time::Instant) -> bool {
+    now.duration_since(last_probe).as_millis() as u64 >= AGENT_WAIT_FALLBACK_PROBE_INTERVAL_MS
+}
+
 pub(super) fn wait_for_output(
     request_id: String,
     params: crate::api::schema::PaneWaitForOutputParams,
@@ -382,6 +391,7 @@ fn wait_for_resolved_agent(
     let expected_agent = wait.initial.agent.clone();
     let pane_id = wait.initial.pane_id.clone();
     let mut last_event_sequence = wait.last_event_sequence;
+    let mut last_probe = std::time::Instant::now();
 
     loop {
         if should_stop_connection(stream, running)? {
@@ -454,7 +464,15 @@ fn wait_for_resolved_agent(
             }
         }
 
+        // A pane event is not the only reason to re-read state: a lost or
+        // never-emitted transition event must not wedge the wait, so probe
+        // periodically regardless of event traffic.
+        let now = std::time::Instant::now();
+        if !should_probe && agent_wait_fallback_probe_due(last_probe, now) {
+            should_probe = true;
+        }
         if should_probe {
+            last_probe = now;
             let current = match agent_get(&request_id, &wait.target, api_tx) {
                 Ok(agent) => agent,
                 Err(response) => {
@@ -505,7 +523,7 @@ fn wait_for_resolved_agent(
             if agent_wait_matches(&current, &wait.until, wait.after_state_change_seq) {
                 return Ok(Some(AgentWaitOutcome::Matched(Box::new(current))));
             }
-            return agent_wait_timeout(request_id, wait.timeout_kind, &current)
+            return agent_wait_timeout(request_id, wait.timeout_kind, &wait.until, &current)
                 .map(AgentWaitOutcome::Response)
                 .map(Some);
         }
@@ -650,21 +668,34 @@ fn agent_wait_success(
 fn agent_wait_timeout(
     request_id: String,
     kind: AgentWaitTimeoutKind,
+    until: &[crate::api::schema::AgentStatus],
     current: &crate::api::schema::AgentInfo,
 ) -> std::io::Result<String> {
+    let status = format!("{:?}", current.agent_status).to_ascii_lowercase();
     let (code, message) = match kind {
         AgentWaitTimeoutKind::Status => {
-            ("timeout", "timed out waiting for agent status".to_string())
+            let mut message =
+                format!("timed out waiting for agent status; current status is {status}");
+            // A pane that finished while unseen reports done, not idle: idle
+            // only becomes observable once the pane is viewed. Surface that
+            // distinction instead of leaving the caller staring at a hang.
+            if current.agent_status == crate::api::schema::AgentStatus::Done
+                && until.contains(&crate::api::schema::AgentStatus::Idle)
+                && !until.contains(&crate::api::schema::AgentStatus::Done)
+            {
+                message.push_str(
+                    "; done means the agent finished with unseen output — it reports idle \
+                     once the pane is viewed, or include done in the requested states",
+                );
+            }
+            ("timeout", message)
         }
-        AgentWaitTimeoutKind::PromptStalled { timeout_ms } => {
-            let status = format!("{:?}", current.agent_status).to_ascii_lowercase();
-            (
-                "agent_prompt_stalled",
-                format!(
-                    "agent prompt produced no observed working or blocked state within {timeout_ms} ms; current status is {status}"
-                ),
-            )
-        }
+        AgentWaitTimeoutKind::PromptStalled { timeout_ms } => (
+            "agent_prompt_stalled",
+            format!(
+                "agent prompt produced no observed working or blocked state within {timeout_ms} ms; current status is {status}"
+            ),
+        ),
     };
     serde_json::to_string(&ErrorResponse {
         id: request_id,
@@ -824,6 +855,98 @@ fn wait_matched_response(request_id: &str, event: serde_json::Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn agent_with_status(status: crate::api::schema::AgentStatus) -> crate::api::schema::AgentInfo {
+        serde_json::from_value(serde_json::json!({
+            "terminal_id": "term_test",
+            "agent_status": status,
+            "workspace_id": "w1",
+            "tab_id": "w1:t1",
+            "pane_id": "w1:p1",
+            "focused": false,
+            "revision": 0
+        }))
+        .expect("test agent info should decode")
+    }
+
+    #[test]
+    fn agent_wait_fallback_probe_interval_gates_periodic_state_rechecks() {
+        let now = std::time::Instant::now();
+        assert!(!agent_wait_fallback_probe_due(
+            now,
+            now + std::time::Duration::from_millis(AGENT_WAIT_FALLBACK_PROBE_INTERVAL_MS - 1)
+        ));
+        assert!(agent_wait_fallback_probe_due(
+            now,
+            now + std::time::Duration::from_millis(AGENT_WAIT_FALLBACK_PROBE_INTERVAL_MS)
+        ));
+    }
+
+    #[test]
+    fn agent_wait_timeout_reports_current_status() {
+        let response = agent_wait_timeout(
+            "wait".into(),
+            AgentWaitTimeoutKind::Status,
+            &[crate::api::schema::AgentStatus::Blocked],
+            &agent_with_status(crate::api::schema::AgentStatus::Working),
+        )
+        .unwrap();
+        let parsed: ErrorResponse = serde_json::from_str(&response).unwrap();
+        assert_eq!(parsed.error.code, "timeout");
+        assert_eq!(
+            parsed.error.message,
+            "timed out waiting for agent status; current status is working"
+        );
+    }
+
+    #[test]
+    fn agent_wait_timeout_explains_unseen_done_output_for_idle_only_waits() {
+        let done = agent_with_status(crate::api::schema::AgentStatus::Done);
+        let idle_only = [crate::api::schema::AgentStatus::Idle];
+
+        let hinted = agent_wait_timeout(
+            "wait".into(),
+            AgentWaitTimeoutKind::Status,
+            &idle_only,
+            &done,
+        )
+        .unwrap();
+        let parsed: ErrorResponse = serde_json::from_str(&hinted).unwrap();
+        assert!(parsed.error.message.contains("current status is done"));
+        assert!(parsed.error.message.contains("finished with unseen output"));
+
+        // Waiting for idle-or-done already matches done, so no hint is needed.
+        let idle_or_done = [
+            crate::api::schema::AgentStatus::Idle,
+            crate::api::schema::AgentStatus::Done,
+        ];
+        let plain = agent_wait_timeout(
+            "wait".into(),
+            AgentWaitTimeoutKind::Status,
+            &idle_or_done,
+            &done,
+        )
+        .unwrap();
+        let parsed: ErrorResponse = serde_json::from_str(&plain).unwrap();
+        assert!(!parsed.error.message.contains("unseen output"));
+    }
+
+    #[test]
+    fn agent_wait_timeout_keeps_prompt_stalled_wording() {
+        let response = agent_wait_timeout(
+            "wait".into(),
+            AgentWaitTimeoutKind::PromptStalled { timeout_ms: 5_000 },
+            &[crate::api::schema::AgentStatus::Idle],
+            &agent_with_status(crate::api::schema::AgentStatus::Idle),
+        )
+        .unwrap();
+        let parsed: ErrorResponse = serde_json::from_str(&response).unwrap();
+        assert_eq!(parsed.error.code, "agent_prompt_stalled");
+        assert_eq!(
+            parsed.error.message,
+            "agent prompt produced no observed working or blocked state within 5000 ms; current status is idle"
+        );
+    }
 
     #[test]
     fn agent_wait_probe_only_translates_agent_disappearance() {

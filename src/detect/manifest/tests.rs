@@ -104,6 +104,54 @@ fn known_agent_no_match_defaults_to_idle_fallback() {
 }
 
 #[test]
+fn bottom_line_permission_footer_survives_transcript_quoting() {
+    with_manifest_dirs("permission-footer", || {
+        write_local_codex(&rules_manifest(
+            r#"
+[[rules]]
+id = "permission_required"
+state = "blocked"
+priority = 300
+region = "bottom_non_empty_lines(1)"
+visible_blocker = true
+all = [
+  { any = [{ contains = ["↑↓ select"] }, { contains = ["⇆ tab"] }, { contains = ["⇆ select"] }] },
+  { any = [{ contains = ["enter confirm"] }, { contains = ["enter submit"] }, { contains = ["enter toggle"] }] },
+  { any = [{ contains = ["esc dismiss"] }, { contains = ["esc cancel"] }, { contains = ["esc reject"] }] },
+]
+"#,
+        ));
+
+        // Live v2-style footer line classifies the pane as blocked.
+        let v2 = explain(
+            Agent::Codex,
+            "  OpenCode\n\n  Allow command execution?\n\n\n  ⇆ select · enter confirm · esc cancel\n",
+        );
+        assert_eq!(v2.state, AgentState::Blocked);
+        assert!(v2.visible_blocker);
+
+        // Legacy v1-style footer line classifies the pane as blocked.
+        let v1 = explain(
+            Agent::Codex,
+            "  △ Permission required\n\n  rm -rf /tmp\n\n\n  ↑↓ select · enter confirm · esc dismiss\n",
+        );
+        assert_eq!(v1.state, AgentState::Blocked);
+
+        // Transcript text merely quoting footer controls cannot classify a
+        // working pane as blocked: the bottom line is the classifier.
+        let quoting = explain(
+            Agent::Codex,
+            "  press esc dismiss or ↑↓ select then enter confirm to submit\n\n  ⠋ building…\n",
+        );
+        assert_eq!(quoting.state, AgentState::Idle);
+        assert_eq!(
+            quoting.fallback_reason.as_deref(),
+            Some(DEFAULT_KNOWN_AGENT_IDLE_FALLBACK)
+        );
+    });
+}
+
+#[test]
 fn rule_semantics_apply_gates_priority_and_line_regex() {
     with_manifest_dirs("rule-semantics", || {
         write_local_codex(&rules_manifest(

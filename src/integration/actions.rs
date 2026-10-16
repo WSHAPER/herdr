@@ -22,6 +22,40 @@ pub(crate) fn install_target(
     result
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct IntegrationRepairReport {
+    pub(crate) repaired: Vec<crate::api::schema::IntegrationTarget>,
+    pub(crate) failed: Vec<(crate::api::schema::IntegrationTarget, String)>,
+}
+
+/// Reconcile installed integrations whose registration went missing while
+/// their installed assets are already current ("needs repair").
+///
+/// The opencode integration defers its `cli.json` registration while
+/// OpenCode's V1→V2 migration is pending; when OpenCode later creates
+/// `cli.json` itself, the plugin entry is absent and pane reporting silently
+/// falls back to heuristics. Repair re-runs the idempotent install flow,
+/// which preserves foreign config keys and comments. Scope stays on opencode:
+/// it is the only target with deferral semantics, and older-version installs
+/// belong to the update flow, not to repair.
+pub(crate) fn repair_current_version_integrations() -> IntegrationRepairReport {
+    let mut report = IntegrationRepairReport::default();
+    for status in super::registry::outdated_installed_integrations() {
+        if status.target != crate::api::schema::IntegrationTarget::Opencode
+            || status
+                .installed_version
+                .is_none_or(|installed| installed < status.expected_version)
+        {
+            continue;
+        }
+        match install_target(status.target) {
+            Ok(_) => report.repaired.push(status.target),
+            Err(err) => report.failed.push((status.target, err.to_string())),
+        }
+    }
+    report
+}
+
 /// Experimental Letta install that bypasses the frozen client endpoint
 /// `IntegrationTarget` enum. Fold into the agent registry when it lands.
 pub(crate) fn install_experimental_letta() -> io::Result<Vec<String>> {

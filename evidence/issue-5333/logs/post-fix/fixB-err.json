@@ -1,0 +1,1 @@
+{"error":{"code":"timeout","message":"timed out waiting for agent status; current status is done; done means the agent finished with unseen output — it reports idle once the pane is viewed, or include done in the requested states"},"id":"cli:agent:wait"}

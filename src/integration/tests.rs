@@ -5191,3 +5191,74 @@ fn grok_dir_honors_grok_home_after_config_dir_seam() {
     clear_integration_path_env();
     let _ = fs::remove_dir_all(base);
 }
+
+#[test]
+fn health_repair_completes_deferred_registration_after_migration() {
+    let _lock = integration_env_lock();
+    let base = unique_base();
+    let home = base.join("home");
+    let dir = home.join(".config/opencode");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("tui.json"), "{}").unwrap();
+    std::env::set_var("HOME", &home);
+
+    // Install defers cli.json registration while the V1->V2 migration is pending.
+    install_opencode().unwrap();
+    assert!(!dir.join("cli.json").exists());
+
+    // OpenCode's own first V2 start creates cli.json without the plugin entry.
+    fs::write(dir.join("cli.json"), r#"{"theme":"dark"}"#).unwrap();
+
+    let repaired = super::repair_current_version_integrations();
+    assert_eq!(
+        repaired.repaired,
+        vec![crate::api::schema::IntegrationTarget::Opencode]
+    );
+    assert!(repaired.failed.is_empty());
+    let cli = fs::read_to_string(dir.join("cli.json")).unwrap();
+    assert!(cli.contains("./herdr-opencode"));
+    assert!(cli.contains("\"theme\":\"dark\""));
+
+    // Healthy installs are left alone: the second pass is a no-op.
+    let again = super::repair_current_version_integrations();
+    assert!(again.repaired.is_empty());
+    assert!(again.failed.is_empty());
+
+    std::env::remove_var("HOME");
+    let _ = fs::remove_dir_all(base);
+}
+
+#[test]
+fn health_repair_reports_unwritable_config_without_panicking() {
+    let _lock = integration_env_lock();
+    let base = unique_base();
+    let home = base.join("home");
+    let dir = home.join(".config/opencode");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("cli.json"), r#"{"theme":"dark"}"#).unwrap();
+    std::env::set_var("HOME", &home);
+    install_opencode().unwrap();
+    super::opencode_config::remove_cli_plugin(&dir, OPENCODE_V2_TUI_PLUGIN_SPEC).unwrap();
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o500)).unwrap();
+    }
+
+    let report = super::repair_current_version_integrations();
+    assert!(report.repaired.is_empty());
+    assert_eq!(report.failed.len(), 1);
+    assert_eq!(
+        report.failed[0].0,
+        crate::api::schema::IntegrationTarget::Opencode
+    );
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    std::env::remove_var("HOME");
+    let _ = fs::remove_dir_all(base);
+}

@@ -383,7 +383,16 @@ fn agent_attach(params: bindings::Attach) -> std::io::Result<i32> {
     Ok(0)
 }
 
-fn agent_wait(params: AgentWaitParams) -> std::io::Result<i32> {
+fn agent_wait(mut params: AgentWaitParams) -> std::io::Result<i32> {
+    // The raw API keeps indefinite waits available; the CLI applies a
+    // configurable default so a wedged wait surfaces as an actionable timeout
+    // instead of hanging silently. `0` in config restores indefinite waiting.
+    if params.timeout_ms.is_none() {
+        let default_timeout_ms = crate::config::Config::load().config.agent.wait_timeout_ms;
+        if default_timeout_ms > 0 {
+            params.timeout_ms = Some(default_timeout_ms);
+        }
+    }
     super::print_response(&super::send_request(&Request {
         id: "cli:agent:wait".into(),
         method: Method::AgentWait(params),

@@ -198,3 +198,184 @@ fn agent_wait_exits_when_done_status_matches() {
 
     cleanup_spawned_herdr(herdr, base);
 }
+
+#[test]
+fn agent_wait_timeout_explains_unseen_done_pane() {
+    let base = unique_test_dir();
+    let config_home = base.join("config");
+    let runtime_dir = base.join("runtime");
+    let socket_path = runtime_dir.join("herdr.sock");
+
+    let herdr = spawn_herdr(&config_home, &runtime_dir, &socket_path);
+    wait_for_socket(&socket_path, Duration::from_secs(5));
+
+    let created = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_done_hint_1","method":"workspace.create","params":{{"cwd":"{}","focus":true}}}}"#,
+            base.display()
+        ),
+    );
+    let workspace_id = created["result"]["workspace"]["workspace_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let focused_tab = created["result"]["workspace"]["active_tab_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let tab_created = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_done_hint_2","method":"tab.create","params":{{"workspace_id":"{}"}}}}"#,
+            workspace_id
+        ),
+    );
+    assert_eq!(tab_created["result"]["type"], "tab_created");
+    let background_tab = tab_created["result"]["tab"]["tab_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let panes = send_request(
+        &socket_path,
+        r#"{"id":"req_cli_done_hint_3","method":"pane.list","params":{}}"#,
+    );
+    let background_pane = panes["result"]["panes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|pane| pane["tab_id"].as_str() == Some(background_tab.as_str()))
+        .map(|pane| pane["pane_id"].as_str().unwrap().to_string())
+        .unwrap();
+
+    // Keep the completion unseen: the pane lives in a background tab.
+    let focused = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_done_hint_4","method":"tab.focus","params":{{"tab_id":"{}"}}}}"#,
+            focused_tab
+        ),
+    );
+    assert_eq!(focused["result"]["type"], "tab_info");
+
+    for state in ["working", "idle"] {
+        let reported = send_request(
+            &socket_path,
+            &format!(
+                r#"{{"id":"req_cli_done_hint_5","method":"pane.report_agent","params":{{"pane_id":"{}","source":"custom:test","agent":"pi","state":"{}"}}}}"#,
+                background_pane, state
+            ),
+        );
+        assert_eq!(reported["result"]["type"], "ok");
+    }
+
+    let waited = run_cli(
+        &socket_path,
+        &[
+            "agent",
+            "wait",
+            &background_pane,
+            "--until",
+            "idle",
+            "--timeout",
+            "400",
+        ],
+    );
+    assert!(!waited.status.success());
+    let stderr = String::from_utf8_lossy(&waited.stderr);
+    assert!(
+        stderr.contains("current status is done"),
+        "stderr: {stderr}"
+    );
+    assert!(
+        stderr.contains("finished with unseen output"),
+        "stderr: {stderr}"
+    );
+
+    cleanup_spawned_herdr(herdr, base);
+}
+
+#[test]
+fn agent_wait_idle_recovers_after_tab_focus() {
+    let base = unique_test_dir();
+    let config_home = base.join("config");
+    let runtime_dir = base.join("runtime");
+    let socket_path = runtime_dir.join("herdr.sock");
+
+    let herdr = spawn_herdr(&config_home, &runtime_dir, &socket_path);
+    wait_for_socket(&socket_path, Duration::from_secs(5));
+
+    let created = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_focus_1","method":"workspace.create","params":{{"cwd":"{}","focus":true}}}}"#,
+            base.display()
+        ),
+    );
+    let workspace_id = created["result"]["workspace"]["workspace_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let tab_created = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_focus_2","method":"tab.create","params":{{"workspace_id":"{}","focus":true}}}}"#,
+            workspace_id
+        ),
+    );
+    assert_eq!(tab_created["result"]["type"], "tab_created");
+    let background_tab = tab_created["result"]["tab"]["tab_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let background_pane = tab_created["result"]["root_pane"]["pane_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    for state in ["working", "idle"] {
+        let reported = send_request(
+            &socket_path,
+            &format!(
+                r#"{{"id":"req_cli_focus_4","method":"pane.report_agent","params":{{"pane_id":"{}","source":"custom:test","agent":"pi","state":"{}"}}}}"#,
+                background_pane, state
+            ),
+        );
+        assert_eq!(reported["result"]["type"], "ok");
+    }
+
+    // Viewing the pane flips the unseen completion from done to idle.
+    let focused = send_request(
+        &socket_path,
+        &format!(
+            r#"{{"id":"req_cli_focus_5","method":"tab.focus","params":{{"tab_id":"{}"}}}}"#,
+            background_tab
+        ),
+    );
+    assert_eq!(focused["result"]["type"], "tab_info");
+
+    let waited = run_cli(
+        &socket_path,
+        &[
+            "agent",
+            "wait",
+            &background_pane,
+            "--until",
+            "idle",
+            "--timeout",
+            "1000",
+        ],
+    );
+    assert!(
+        waited.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&waited.stderr)
+    );
+    let waited_json: serde_json::Value = serde_json::from_slice(&waited.stdout).unwrap();
+    assert_eq!(waited_json["result"]["agent"]["agent_status"], "idle");
+
+    cleanup_spawned_herdr(herdr, base);
+}

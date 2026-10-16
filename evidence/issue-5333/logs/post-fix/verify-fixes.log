@@ -1,0 +1,20 @@
+== FIX A: CLI default timeout from config (agent.wait_timeout_ms = 2000) ==
+server ready at /tmp/herdr-home/herdr.sock
+fixA_exit=1 elapsed_ms=2055 (expect ~2000, exit 1)
+{"error":{"code":"timeout","message":"timed out waiting for agent status; current status is working"},"id":"cli:agent:wait"}
+== FIX B: timeout error reports done + unseen-output hint ==
+fixB_exit=1
+{"error":{"code":"timeout","message":"timed out waiting for agent status; current status is done; done means the agent finished with unseen output — it reports idle once the pane is viewed, or include done in the requested states"},"id":"cli:agent:wait"}
+== FIX C: boot-time integration health repair ==
+cli.json after deferred install: ABSENT
+status before restart: opencode: needs repair (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+server ready at /tmp/herdr-home/herdr.sock
+cli.json after server restart: {
+  "theme":"dark",
+  "plugins": ["./herdr-opencode"]
+}
+status after restart: opencode: current (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+== FIX D: v2 manifest rules ==
+v2 esc cancel -> 
+v2 esc reject -> 
+transcript quoting -> 
