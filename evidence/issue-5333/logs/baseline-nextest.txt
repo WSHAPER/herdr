@@ -1,0 +1,2 @@
+baseline: cargo nextest run --locked on master 143bf5fd
+     Summary [  24.423s] 4097 tests run: 4097 passed, 16 skipped

@@ -1,0 +1,31 @@
+== [1] install fake opencode fixture printer ==
+fake installed
+== [2] new tab + run fake opencode in its pane ==
+{"id":"cli:tab:create","result":{"root_pane":{"agent_status":"unknown","cwd":"/tmp","focused":false,"foreground_cwd":"/tmp","pane_id":"w1:p3","revision":0,"scroll":{"max_offset_from_bottom":0,"offset_from_bottom":0,"viewport_rows":40},"tab_id":"w1:t3","terminal_id":"term_65df9f413d4233","workspace_id":"w1"},"tab":{"agent_status":"unknown","focused":false,"label":"detect","number":3,"pane_count":1,"tab_id":"w1:t3","workspace_id":"w1"},"type":"tab_created"}}
+detection pane: w1:p3
+{"id":"cli:tab:focus","result":{"tab":{"agent_status":"idle","focused":true,"label":"1","number":1,"pane_count":1,"tab_id":"w1:t1","workspace_id":"w1"},"type":"tab_info"}}
+== phase: v2_permission_esc_cancel ==
+detection_text (last 3 lines):
+
+
+  ⇆ select · enter confirm · esc cancel
+explain: {"agent": "opencode", "state": "idle", "rule": null, "reason": "default_known_agent_idle_fallback", "skip": false}
+== phase: v2_permission_esc_reject ==
+detection_text (last 3 lines):
+
+
+  ⇆ select · enter confirm · esc reject
+explain: {"agent": "opencode", "state": "idle", "rule": null, "reason": "default_known_agent_idle_fallback", "skip": false}
+== phase: v1_permission_dialog ==
+detection_text (last 3 lines):
+
+
+  ⇆ select · enter confirm · esc reject
+explain: {"agent": "opencode", "state": "idle", "rule": null, "reason": "default_known_agent_idle_fallback", "skip": false}
+== phase: working_transcript_quoting_v1_footer ==
+detection_text (last 3 lines):
+  rm -rf /tmp/scratch
+
+  ↑↓ select · enter confirm · esc dismiss
+explain: {"agent": "opencode", "state": "blocked", "rule": "permission_required", "reason": null, "skip": false}
+final explain: {"agent": "opencode", "state": "blocked", "rule": "permission_required", "reason": null, "skip": false}

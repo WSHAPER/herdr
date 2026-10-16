@@ -1,0 +1,12 @@
+== [1] pane w1:p1 idle; start 'agent wait w1:p1 --until blocked' with NO timeout ==
+t=1s: wait still running (no timeout => indefinite)
+t=2s: wait still running (no timeout => indefinite)
+t=3s: wait still running (no timeout => indefinite)
+t=4s: wait still running (no timeout => indefinite)
+t=5s: wait still running (no timeout => indefinite)
+== [2] report blocked — the wait should fire immediately ==
+{"id": "py_1", "result": {"type": "ok"}}
+wait_exit=0 (0 = fired on genuine transition after 5+s of indefinite waiting)
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"blocked","cwd":"/tmp","focused":false,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":7,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}
+== [3] restore idle ==
+{"id": "py_1", "result": {"type": "ok"}}

@@ -1,0 +1,1 @@
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"done","completion_seq":6,"cwd":"/tmp","focused":false,"foreground_cwd":"/tmp","pane_id":"w1:p2","revision":0,"state_change_seq":6,"tab_id":"w1:t2","terminal_id":"term_65df9ddc36ab42","workspace_id":"w1"},"type":"agent_info"}}

@@ -1,0 +1,12 @@
+== [1] report working on w1:p1 (custom:docs authority) ==
+{"id": "py_1", "result": {"type": "ok"}}
+== [2] start 'agent wait w1:p1 --until idle --timeout 15000' in background ==
+== [3] report idle (genuine transition) ==
+{"id": "py_1", "result": {"type": "ok"}}
+wait_exit=0
+wait stdout:
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":4,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":4,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}
+wait stderr:
+== [4] immediate-match: wait again while already idle (no timeout) ==
+immediate_match_exit=0 elapsed_ms=67
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":4,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":4,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}

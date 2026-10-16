@@ -1,0 +1,30 @@
+{"id":"cli:tab:focus","result":{"tab":{"agent_status":"idle","focused":true,"label":"1","number":1,"pane_count":1,"tab_id":"w1:t1","workspace_id":"w1"},"type":"tab_info"}}
+== control (no burst, no timeout) ==
+{"id": "py_1", "result": {"type": "ok"}}
+{"id": "py_1", "result": {"type": "ok"}}
+[control] fired normally, exit=0 elapsed_ms=3469
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":10,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":10,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}
+== trial B: burst + --timeout 2500 (late-fire-at-deadline contrast) ==
+{"id": "py_1", "result": {"type": "ok"}}
+{"id": "py_1", "result": {"type": "ok"}}
+burst_result: {"responses": 700, "elapsed_s": 0.639}
+[timeout2500] fired normally, exit=0 elapsed_ms=4195
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":12,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":12,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}
+== trial A1: burst, no timeout (wedge hunt) ==
+{"id": "py_1", "result": {"type": "ok"}}
+{"id": "py_1", "result": {"type": "ok"}}
+burst_result: {"responses": 700, "elapsed_s": 0.715}
+[wedge1] fired normally, exit=0 elapsed_ms=4264
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":14,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":14,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}
+== trial A2: burst, no timeout (wedge hunt) ==
+{"id": "py_1", "result": {"type": "ok"}}
+{"id": "py_1", "result": {"type": "ok"}}
+burst_result: {"responses": 700, "elapsed_s": 0.917}
+[wedge2] fired normally, exit=0 elapsed_ms=4463
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":16,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":16,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}
+== trial A3: burst, no timeout (wedge hunt) ==
+{"id": "py_1", "result": {"type": "ok"}}
+{"id": "py_1", "result": {"type": "ok"}}
+burst_result: {"responses": 700, "elapsed_s": 0.922}
+[wedge3] fired normally, exit=0 elapsed_ms=4483
+{"id":"cli:agent:wait","result":{"agent":{"agent":"opencode","agent_status":"idle","completion_seq":18,"cwd":"/tmp","focused":true,"foreground_cwd":"/tmp","pane_id":"w1:p1","revision":0,"state_change_seq":18,"tab_id":"w1:t1","terminal_id":"term_65df9d1c3263f1","workspace_id":"w1"},"type":"agent_info"}}

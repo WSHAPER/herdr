@@ -1,0 +1,145 @@
+== [1] simulate legacy v1 opencode machine (tui.json + kv.json, no cli.json) ==
+/tmp/herdr-home/.config/opencode:
+tui.json
+
+/tmp/herdr-home/.local/state/opencode:
+kv.json
+== [2] herdr integration install opencode ==
+installed opencode integration plugin to /tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js
+installed opencode tui integration plugin to /tmp/herdr-home/.config/opencode/herdr-tui-session.js
+ensured opencode tui plugin config at /tmp/herdr-home/.config/opencode/tui.jsonc
+to enable OpenCode V2, start opencode2 once, then reinstall this integration
+-- files after install:
+herdr-opencode
+herdr-tui-session.js
+plugins
+tui.json
+tui.jsonc
+
+{
+  "plugin": ["./herdr-tui-session.js"]
+}
+
+cli.json ABSENT
+== [3] integration status during deferral ==
+pi: not installed (/tmp/herdr-home/.pi/agent/extensions/herdr-agent-state.ts)
+omp: not installed (/tmp/herdr-home/.omp/agent/extensions/herdr-omp-agent-state.ts)
+claude: not installed (/tmp/herdr-home/.claude/hooks/herdr-agent-state.sh)
+codex: not installed (/tmp/herdr-home/.codex/herdr-agent-state.sh)
+copilot: not installed (/tmp/herdr-home/.copilot/hooks/herdr-agent-state.sh)
+devin: not installed (/tmp/herdr-home/.config/devin/herdr-agent-state.sh)
+droid: not installed (/tmp/herdr-home/.factory/hooks/herdr-agent-state.sh)
+kimi: not installed (/tmp/herdr-home/.kimi-code/hooks/herdr-agent-state.sh)
+opencode: current (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+kilo: not installed (/tmp/herdr-home/.config/kilo/plugin/herdr-agent-state.js)
+hermes: not installed (/tmp/herdr-home/.hermes/plugins/herdr-agent-state/__init__.py)
+qodercli: not installed (/tmp/herdr-home/.qoder/hooks/herdr-agent-state.sh)
+qwen: not installed (/tmp/herdr-home/.qwen/hooks/herdr-agent-session.sh)
+cursor: not installed (/tmp/herdr-home/.cursor/herdr-agent-state.sh)
+mastracode: not installed (/tmp/herdr-home/.mastracode/hooks/herdr-agent-state.sh)
+antigravity-cli: not installed (/tmp/herdr-home/.gemini/config/hooks/herdr-agent-state.sh)
+grok: not installed (/tmp/herdr-home/.grok/hooks/herdr-agent-state.sh)
+letta (experimental): not installed (/tmp/herdr-home/.letta/hooks/herdr-agent-session.sh)
+== [4] simulate opencode first V2 start: migration creates cli.json WITHOUT herdr plugin ==
+pi: not installed (/tmp/herdr-home/.pi/agent/extensions/herdr-agent-state.ts)
+omp: not installed (/tmp/herdr-home/.omp/agent/extensions/herdr-omp-agent-state.ts)
+claude: not installed (/tmp/herdr-home/.claude/hooks/herdr-agent-state.sh)
+codex: not installed (/tmp/herdr-home/.codex/herdr-agent-state.sh)
+copilot: not installed (/tmp/herdr-home/.copilot/hooks/herdr-agent-state.sh)
+devin: not installed (/tmp/herdr-home/.config/devin/herdr-agent-state.sh)
+droid: not installed (/tmp/herdr-home/.factory/hooks/herdr-agent-state.sh)
+kimi: not installed (/tmp/herdr-home/.kimi-code/hooks/herdr-agent-state.sh)
+opencode: needs repair (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+kilo: not installed (/tmp/herdr-home/.config/kilo/plugin/herdr-agent-state.js)
+hermes: not installed (/tmp/herdr-home/.hermes/plugins/herdr-agent-state/__init__.py)
+qodercli: not installed (/tmp/herdr-home/.qoder/hooks/herdr-agent-state.sh)
+qwen: not installed (/tmp/herdr-home/.qwen/hooks/herdr-agent-session.sh)
+cursor: not installed (/tmp/herdr-home/.cursor/herdr-agent-state.sh)
+mastracode: not installed (/tmp/herdr-home/.mastracode/hooks/herdr-agent-state.sh)
+antigravity-cli: not installed (/tmp/herdr-home/.gemini/config/hooks/herdr-agent-state.sh)
+grok: not installed (/tmp/herdr-home/.grok/hooks/herdr-agent-state.sh)
+letta (experimental): not installed (/tmp/herdr-home/.letta/hooks/herdr-agent-session.sh)
+== [5] prove nothing retries: 3 spaced status checks (server stays running) ==
+check 1:
+pi: not installed (/tmp/herdr-home/.pi/agent/extensions/herdr-agent-state.ts)
+omp: not installed (/tmp/herdr-home/.omp/agent/extensions/herdr-omp-agent-state.ts)
+claude: not installed (/tmp/herdr-home/.claude/hooks/herdr-agent-state.sh)
+codex: not installed (/tmp/herdr-home/.codex/herdr-agent-state.sh)
+copilot: not installed (/tmp/herdr-home/.copilot/hooks/herdr-agent-state.sh)
+devin: not installed (/tmp/herdr-home/.config/devin/herdr-agent-state.sh)
+droid: not installed (/tmp/herdr-home/.factory/hooks/herdr-agent-state.sh)
+kimi: not installed (/tmp/herdr-home/.kimi-code/hooks/herdr-agent-state.sh)
+opencode: needs repair (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+kilo: not installed (/tmp/herdr-home/.config/kilo/plugin/herdr-agent-state.js)
+hermes: not installed (/tmp/herdr-home/.hermes/plugins/herdr-agent-state/__init__.py)
+qodercli: not installed (/tmp/herdr-home/.qoder/hooks/herdr-agent-state.sh)
+qwen: not installed (/tmp/herdr-home/.qwen/hooks/herdr-agent-session.sh)
+cursor: not installed (/tmp/herdr-home/.cursor/herdr-agent-state.sh)
+mastracode: not installed (/tmp/herdr-home/.mastracode/hooks/herdr-agent-state.sh)
+antigravity-cli: not installed (/tmp/herdr-home/.gemini/config/hooks/herdr-agent-state.sh)
+grok: not installed (/tmp/herdr-home/.grok/hooks/herdr-agent-state.sh)
+letta (experimental): not installed (/tmp/herdr-home/.letta/hooks/herdr-agent-session.sh)
+check 2:
+pi: not installed (/tmp/herdr-home/.pi/agent/extensions/herdr-agent-state.ts)
+omp: not installed (/tmp/herdr-home/.omp/agent/extensions/herdr-omp-agent-state.ts)
+claude: not installed (/tmp/herdr-home/.claude/hooks/herdr-agent-state.sh)
+codex: not installed (/tmp/herdr-home/.codex/herdr-agent-state.sh)
+copilot: not installed (/tmp/herdr-home/.copilot/hooks/herdr-agent-state.sh)
+devin: not installed (/tmp/herdr-home/.config/devin/herdr-agent-state.sh)
+droid: not installed (/tmp/herdr-home/.factory/hooks/herdr-agent-state.sh)
+kimi: not installed (/tmp/herdr-home/.kimi-code/hooks/herdr-agent-state.sh)
+opencode: needs repair (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+kilo: not installed (/tmp/herdr-home/.config/kilo/plugin/herdr-agent-state.js)
+hermes: not installed (/tmp/herdr-home/.hermes/plugins/herdr-agent-state/__init__.py)
+qodercli: not installed (/tmp/herdr-home/.qoder/hooks/herdr-agent-state.sh)
+qwen: not installed (/tmp/herdr-home/.qwen/hooks/herdr-agent-session.sh)
+cursor: not installed (/tmp/herdr-home/.cursor/herdr-agent-state.sh)
+mastracode: not installed (/tmp/herdr-home/.mastracode/hooks/herdr-agent-state.sh)
+antigravity-cli: not installed (/tmp/herdr-home/.gemini/config/hooks/herdr-agent-state.sh)
+grok: not installed (/tmp/herdr-home/.grok/hooks/herdr-agent-state.sh)
+letta (experimental): not installed (/tmp/herdr-home/.letta/hooks/herdr-agent-session.sh)
+check 3:
+pi: not installed (/tmp/herdr-home/.pi/agent/extensions/herdr-agent-state.ts)
+omp: not installed (/tmp/herdr-home/.omp/agent/extensions/herdr-omp-agent-state.ts)
+claude: not installed (/tmp/herdr-home/.claude/hooks/herdr-agent-state.sh)
+codex: not installed (/tmp/herdr-home/.codex/herdr-agent-state.sh)
+copilot: not installed (/tmp/herdr-home/.copilot/hooks/herdr-agent-state.sh)
+devin: not installed (/tmp/herdr-home/.config/devin/herdr-agent-state.sh)
+droid: not installed (/tmp/herdr-home/.factory/hooks/herdr-agent-state.sh)
+kimi: not installed (/tmp/herdr-home/.kimi-code/hooks/herdr-agent-state.sh)
+opencode: needs repair (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+kilo: not installed (/tmp/herdr-home/.config/kilo/plugin/herdr-agent-state.js)
+hermes: not installed (/tmp/herdr-home/.hermes/plugins/herdr-agent-state/__init__.py)
+qodercli: not installed (/tmp/herdr-home/.qoder/hooks/herdr-agent-state.sh)
+qwen: not installed (/tmp/herdr-home/.qwen/hooks/herdr-agent-session.sh)
+cursor: not installed (/tmp/herdr-home/.cursor/herdr-agent-state.sh)
+mastracode: not installed (/tmp/herdr-home/.mastracode/hooks/herdr-agent-state.sh)
+antigravity-cli: not installed (/tmp/herdr-home/.gemini/config/hooks/herdr-agent-state.sh)
+grok: not installed (/tmp/herdr-home/.grok/hooks/herdr-agent-state.sh)
+letta (experimental): not installed (/tmp/herdr-home/.letta/hooks/herdr-agent-session.sh)
+-- cli.json plugins after passive checks:
+{"theme":"dark"}== [6] manual reinstall repairs ==
+installed opencode integration plugin to /tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js
+installed opencode tui integration plugin to /tmp/herdr-home/.config/opencode/herdr-tui-session.js
+ensured opencode tui plugin config at /tmp/herdr-home/.config/opencode/tui.jsonc
+{
+  "theme":"dark",
+  "plugins": ["./herdr-opencode"]
+}pi: not installed (/tmp/herdr-home/.pi/agent/extensions/herdr-agent-state.ts)
+omp: not installed (/tmp/herdr-home/.omp/agent/extensions/herdr-omp-agent-state.ts)
+claude: not installed (/tmp/herdr-home/.claude/hooks/herdr-agent-state.sh)
+codex: not installed (/tmp/herdr-home/.codex/herdr-agent-state.sh)
+copilot: not installed (/tmp/herdr-home/.copilot/hooks/herdr-agent-state.sh)
+devin: not installed (/tmp/herdr-home/.config/devin/herdr-agent-state.sh)
+droid: not installed (/tmp/herdr-home/.factory/hooks/herdr-agent-state.sh)
+kimi: not installed (/tmp/herdr-home/.kimi-code/hooks/herdr-agent-state.sh)
+opencode: current (v13) (/tmp/herdr-home/.config/opencode/plugins/herdr-agent-state.js)
+kilo: not installed (/tmp/herdr-home/.config/kilo/plugin/herdr-agent-state.js)
+hermes: not installed (/tmp/herdr-home/.hermes/plugins/herdr-agent-state/__init__.py)
+qodercli: not installed (/tmp/herdr-home/.qoder/hooks/herdr-agent-state.sh)
+qwen: not installed (/tmp/herdr-home/.qwen/hooks/herdr-agent-session.sh)
+cursor: not installed (/tmp/herdr-home/.cursor/herdr-agent-state.sh)
+mastracode: not installed (/tmp/herdr-home/.mastracode/hooks/herdr-agent-state.sh)
+antigravity-cli: not installed (/tmp/herdr-home/.gemini/config/hooks/herdr-agent-state.sh)
+grok: not installed (/tmp/herdr-home/.grok/hooks/herdr-agent-state.sh)
+letta (experimental): not installed (/tmp/herdr-home/.letta/hooks/herdr-agent-session.sh)
